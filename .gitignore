@@ -1,0 +1,11 @@
+# ignores
+node_modules/
+dist/
+.vscode/*
+.env
+static/pages-client-js/*
+static/images/uploaded/*
+
+# includes
+!.vscode/launch.json
+!.vscode/tasks.json
