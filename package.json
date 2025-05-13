@@ -9,11 +9,7 @@
     "db-gen-types": "kysely-codegen --out-file=src/db/schema/db-types.ts",
     "db-init-schema": "tsx src/db/schema/init-schema.ts",
     "prepare-debug": "npm run server:build && npm run client:build",
-    "server:watch": "tsx watch src/server.tsx",
-    "server:build": "tsc && copy-files-from-to",
-    "client:build": "esbuild src/pages/*.tsx --bundle --outdir=static/pages-client-js",
-    "client:watch": "esbuild src/pages/*.tsx --bundle --watch --outdir=static/pages-client-js",
-    "dev": "concurrently \"npm run server:watch\" \"npm run client:watch\""
+    "dev": "tsx watch src/server.tsx"
   },
   "author": "Martin Elsässer",
   "license": "ISC",
