@@ -17,11 +17,15 @@ app.get("/", (c) => {
 
 /*   start up server   */
 const port = envs.PORT;
-console.log(`Server is running on http://localhost:${port}`);
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    console.log(`Server is running on http://localhost:${info.port}`);
+  }
+);
 
 export type ApiRoutes = typeof apiRoutes;
