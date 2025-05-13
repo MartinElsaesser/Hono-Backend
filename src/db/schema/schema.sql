@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS "todo";
+
+
+CREATE TABLE IF NOT EXISTS "todo" (
+	"id" 			SERIAL 			PRIMARY KEY UNIQUE,
+	"headline"		VARCHAR(50)		NOT NULL,
+	"description"	VARCHAR(300)	NOT NULL,
+	"done" 			BOOLEAN 		NOT NULL,
+	"created_at"	TIMESTAMP 		NOT NULL DEFAULT now()
+);
