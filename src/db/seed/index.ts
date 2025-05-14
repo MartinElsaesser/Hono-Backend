@@ -1,9 +1,4 @@
 import { db } from "../db.js";
-import { HASH_CONFIG } from "../../helpers/configs.js";
-
-import { cp, rm } from "fs/promises";
-import { existsSync } from "fs";
-import { join } from "path";
 
 void (async function seed() {
   await db.deleteFrom("todo").execute();
