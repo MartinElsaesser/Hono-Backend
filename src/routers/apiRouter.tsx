@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "../db/db.js";
+import { parsePositiveIntSchema } from "../schemas/utilitySchemas.js";
 
 const apiRouter = new Hono()
   // get all todos
@@ -15,6 +16,28 @@ const apiRouter = new Hono()
       data: { posts },
     });
   })
+  // get a specific todo
+  .get(
+    "/todos/:id",
+    zValidator(
+      "param",
+      z.object({
+        id: parsePositiveIntSchema,
+      })
+    ),
+    async (c) => {
+      const { id } = await c.req.valid("param");
+      const posts = await db
+        .selectFrom("todo")
+        .selectAll()
+        .where("id", "=", id)
+        .execute();
+      return c.json({
+        success: true,
+        data: { posts },
+      });
+    }
+  )
   // create a new todo
   .post(
     "/todos",
