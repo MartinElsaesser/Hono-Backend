@@ -1,5 +1,11 @@
 import z from "zod";
 
+export const positiveIntSchema = z
+  .number()
+  .int()
+  .positive()
+  .safe();
+
 export const parsePositiveIntSchema = z
   .string()
   .regex(/^-?\d+$/)
