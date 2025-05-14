@@ -17,6 +17,7 @@ export interface Todo {
   done: boolean;
   headline: string;
   id: Generated<number>;
+  position: Generated<number>;
 }
 
 export interface DB {
