@@ -1,5 +1,5 @@
-import { Selectable, Updateable, Insertable } from "kysely";
-import { Todo } from "./db-types.js";
+import type { Selectable, Updateable, Insertable } from "kysely";
+import type { Todo } from "./db-types.js";
 
 export type GetPost = Selectable<Todo>;
 export type CreatePost = Insertable<Todo>;
