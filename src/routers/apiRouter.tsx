@@ -88,7 +88,7 @@ const apiRouter = new Hono()
     async (c) => {
       const updateTodo = await c.req.valid("json");
       const todoId = await c.req.valid("param");
-
+      throw new Error("Cannot update todo")
       const todo = await db
         .updateTable("todo")
         .set(updateTodo)
