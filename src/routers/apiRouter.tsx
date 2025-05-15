@@ -57,56 +57,69 @@ const apiRouter = new Hono()
 			return c.json(todo);
 		}
 	)
-	// swap todos positions by id and position
+	// shift todo positions for sortable list
 	.patch(
 		"/todos/swap-by-id",
 		zValidator(
 			"json",
 			z.object({
-				id1: positiveIntSchema,
-				position1: positiveIntSchema,
-				id2: positiveIntSchema,
-				position2: positiveIntSchema,
+				fromId: positiveIntSchema,
+				toId: positiveIntSchema,
 			})
 		),
 		async c => {
-			const { id1, position1, id2, position2 } = await c.req.valid("json");
-
-			const todos = await db
-				.selectFrom("todo")
-				.select(["id", "position"])
-				.where(eb =>
-					eb.or([
-						eb.and([eb("id", "=", id1), eb("position", "=", position1)]),
-						eb.and([eb("id", "=", id2), eb("position", "=", position2)]),
-					])
-				)
-				.execute();
-
-			if (todos.length !== 2) {
-				throw new Error("Invalid todo ids or positions");
-			}
-			const [todo1, todo2] = todos;
+			const { fromId, toId } = await c.req.valid("json");
 
 			const result = await db.transaction().execute(async trx => {
-				const swappedTodo1 = await trx
-					.updateTable("todo")
-					.set({ position: todo2.position })
-					.where("id", "=", todo1.id)
-					.returningAll()
+				const toTodo = await db
+					.selectFrom("todo")
+					.select(["id", "position"])
+					.where("todo.id", "=", toId)
 					.executeTakeFirstOrThrow();
 
-				const swappedTodo2 = await trx
+				const fromTodo = await db
+					.selectFrom("todo")
+					.select(["id", "position"])
+					.where("todo.id", "=", fromId)
+					.executeTakeFirstOrThrow();
+				const futurePositionFromTodo = toTodo.position;
+
+				let shiftOtherTodosQuery = trx.updateTable("todo").returningAll();
+				if (toTodo.position < fromTodo.position) {
+					// rechts-shift
+					shiftOtherTodosQuery = shiftOtherTodosQuery
+						.set(eb => ({ position: eb("position", "+", 1) }))
+						.where(eb =>
+							eb.and([
+								eb("position", ">=", toTodo.position),
+								eb("position", "<", fromTodo.position),
+							])
+						);
+				} else if (fromTodo.position < toTodo.position) {
+					// links-shift
+					shiftOtherTodosQuery = shiftOtherTodosQuery
+						.set(eb => ({ position: eb("position", "-", 1) }))
+						.where(eb =>
+							eb.and([
+								eb("position", ">", fromTodo.position),
+								eb("position", "<=", toTodo.position),
+							])
+						);
+				} else {
+					throw new Error("Cannot swap the same todo");
+				}
+				await shiftOtherTodosQuery.execute();
+
+				const fromTodoNowAtFuturePosition = await trx
 					.updateTable("todo")
-					.set({ position: todo1.position })
-					.where("id", "=", todo2.id)
+					.set({ position: futurePositionFromTodo })
+					.where("id", "=", fromId)
 					.returningAll()
 					.executeTakeFirstOrThrow();
-
-				return [swappedTodo1, swappedTodo2];
+				return fromTodoNowAtFuturePosition;
 			});
 
-			return c.json(result);
+			return c.json({});
 		}
 	)
 	// swap todos by position
