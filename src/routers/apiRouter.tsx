@@ -58,8 +58,10 @@ const apiRouter = new Hono()
 		}
 	)
 	// shift todo positions for sortable list
+	// TODO: refactor
+	// TODO: add a documentation link
 	.patch(
-		"/todos/swap-by-id",
+		"/todos/@arrayMove",
 		zValidator(
 			"json",
 			z.object({
