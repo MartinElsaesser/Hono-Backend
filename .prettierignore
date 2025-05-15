@@ -1,0 +1,25 @@
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+
+# markdown files
+*.md
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# misc
+.DS_Store
+
+# build
+static/js/build
+dist/
