@@ -11,14 +11,14 @@ import { todoSchema } from "../schemas/todo.js";
 const apiRouter = new Hono()
   // get all todos
   .get("/todos", async (c) => {
-    const posts = await db
+    const todos = await db
       .selectFrom("todo")
       .orderBy("id", "asc")
       .selectAll()
       .execute();
     return c.json({
       success: true,
-      data: { posts },
+      data: { todos },
     });
   })
   // get a specific todo
@@ -55,21 +55,21 @@ const apiRouter = new Hono()
       })
     ),
     async (c) => {
-      const todo = await c.req.valid("json");
+      const insertTodo = await c.req.valid("json");
 
-      const post = await db
+      const todo = await db
         .insertInto("todo")
         .values({
-          description: todo.description,
-          done: todo.done,
-          headline: todo.headline,
+          description: insertTodo.description,
+          done: insertTodo.done,
+          headline: insertTodo.headline,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
 
       return c.json({
         success: true,
-        data: { post },
+        data: { todo },
       });
     }
   )
@@ -197,20 +197,20 @@ const apiRouter = new Hono()
   // delete a todo
   .delete(
     "/todos",
-    zValidator("json", z.object({ postId: z.number() })),
+    zValidator("json", z.object({ todoId: z.number() })),
     async (c) => {
       // get validated data
-      const { postId } = await c.req.valid("json");
+      const { todoId } = await c.req.valid("json");
 
-      const post = await db
+      const todo = await db
         .deleteFrom("todo")
-        .where("id", "=", postId)
+        .where("id", "=", todoId)
         .returningAll()
         .executeTakeFirstOrThrow();
 
       return c.json({
         success: true,
-        data: { post },
+        data: { todo },
       });
     }
   );
