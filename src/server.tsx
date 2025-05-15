@@ -3,10 +3,12 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import apiRouter from "./routers/apiRouter.js";
 import { envs } from "./config/env.js";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 
 /*   register middleware   */
+app.use(cors({origin: "*"}));
 app.use("/static/*", serveStatic({ root: "./" }));
 
 /*   register routers   */
