@@ -32,14 +32,14 @@ const apiRouter = new Hono()
     ),
     async (c) => {
       const { id } = await c.req.valid("param");
-      const posts = await db
+      const todo = await db
         .selectFrom("todo")
         .selectAll()
         .where("id", "=", id)
-        .execute();
+        .executeTakeFirstOrThrow();
       return c.json({
         success: true,
-        data: { posts },
+        data: { todo },
       });
     }
   )
