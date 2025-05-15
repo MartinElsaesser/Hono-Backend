@@ -13,19 +13,19 @@ const apiRouter = new Hono()
 	})
 	// get a specific todo
 	.get(
-		"/todos/:id",
+		"/todos/:todoId",
 		zValidator(
 			"param",
 			z.object({
-				id: parsePositiveIntSchema,
+				todoId: parsePositiveIntSchema,
 			})
 		),
 		async c => {
-			const { id } = await c.req.valid("param");
+			const { todoId } = await c.req.valid("param");
 			const todo = await db
 				.selectFrom("todo")
 				.selectAll()
-				.where("id", "=", id)
+				.where("id", "=", todoId)
 				.executeTakeFirstOrThrow();
 			return c.json(todo);
 		}
