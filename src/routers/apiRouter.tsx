@@ -57,33 +57,6 @@ const apiRouter = new Hono()
 			return c.json(todo);
 		}
 	)
-	// update a todo
-	.patch(
-		"/todos/:todoId",
-		zValidator(
-			"json",
-			todoSchema.omit({ id: true, position: true, created_at: true }).partial()
-		),
-		zValidator(
-			"param",
-			z.object({
-				todoId: parsePositiveIntSchema,
-			})
-		),
-		async c => {
-			const updateTodo = await c.req.valid("json");
-			const todoId = await c.req.valid("param");
-			// throw new Error("Cannot update todo");
-			const todo = await db
-				.updateTable("todo")
-				.set(updateTodo)
-				.where("id", "=", todoId.todoId)
-				.returningAll()
-				.execute();
-
-			return c.json(todo);
-		}
-	)
 	// swap todos positions by id and position
 	.patch(
 		"/todos/swap-by-id",
@@ -167,6 +140,34 @@ const apiRouter = new Hono()
 			return c.json(result);
 		}
 	)
+	// update a todo
+	.patch(
+		"/todos/:todoId",
+		zValidator(
+			"json",
+			todoSchema.omit({ id: true, position: true, created_at: true }).partial()
+		),
+		zValidator(
+			"param",
+			z.object({
+				todoId: parsePositiveIntSchema,
+			})
+		),
+		async c => {
+			const updateTodo = await c.req.valid("json");
+			const { todoId } = await c.req.valid("param");
+			// throw new Error(`Cannot update todo ${todoId}`);
+			const todo = await db
+				.updateTable("todo")
+				.set(updateTodo)
+				.where("id", "=", todoId)
+				.returningAll()
+				.execute();
+
+			return c.json(todo);
+		}
+	)
+
 	// delete a todo
 	.delete("/todos", zValidator("json", z.object({ todoId: z.number() })), async c => {
 		// get validated data
