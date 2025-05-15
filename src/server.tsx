@@ -4,12 +4,17 @@ import { Hono } from "hono";
 import apiRouter from "./routers/apiRouter.js";
 import { envs } from "./config/env.js";
 import { cors } from "hono/cors";
+import {setTimeout} from "node:timers/promises"
 
 const app = new Hono();
 
 /*   register middleware   */
 app.use(cors({origin: "*"}));
 app.use("/static/*", serveStatic({ root: "./" }));
+app.use(async (c, next) => {
+  await setTimeout(2*1000)
+  return await next();
+})
 
 /*   register routers   */
 const apiRoutes = app.route("/api", apiRouter);
