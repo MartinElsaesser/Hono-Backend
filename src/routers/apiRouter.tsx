@@ -8,7 +8,7 @@ import { todoSchema } from "../schemas/todo.js";
 const apiRouter = new Hono()
 	// get all todos
 	.get("/todos", async c => {
-		const todos = await db.selectFrom("todo").orderBy("id", "asc").selectAll().execute();
+		const todos = await db.selectFrom("todo").orderBy("position", "asc").selectAll().execute();
 		return c.json(todos);
 	})
 	// get a specific todo
