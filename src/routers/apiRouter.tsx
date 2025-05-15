@@ -13,6 +13,7 @@ const apiRouter = new Hono()
   .get("/todos", async (c) => {
     const posts = await db
       .selectFrom("todo")
+      .orderBy("id", "asc")
       .selectAll()
       .execute();
     return c.json({
