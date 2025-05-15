@@ -71,67 +71,39 @@ const apiRouter = new Hono()
       });
     }
   )
-  // swap todos by positions
+  // swap todos positions by id and position
   .patch(
-    "/todos/swap1",
-    zValidator(
-      "json",
-      z.object({
-        position1: positiveIntSchema,
-        position2: positiveIntSchema,
-      })
-    ),
-    async (c) => {
-      const { position1, position2 } = await c.req.valid("json");
-
-      const [todo1, todo2] = await db
-        .selectFrom("todo")
-        .select(["id", "position"])
-        .where("position", "in", [position1, position2])
-        .execute();
-
-      const result = await db.transaction().execute(async (trx) => {
-        const swappedTodo1 = await trx
-          .updateTable("todo")
-          .set({ position: todo2.position })
-          .where("id", "=", todo1.id)
-          .returningAll()
-          .executeTakeFirstOrThrow();
-
-        const swappedTodo2 = await trx
-          .updateTable("todo")
-          .set({ position: todo1.position })
-          .where("id", "=", todo2.id)
-          .returningAll()
-          .executeTakeFirstOrThrow();
-
-        return [swappedTodo1, swappedTodo2];
-      });
-
-      return c.json({
-        success: true,
-        data: { result },
-      });
-    }
-  )
-  // swap todos by ids
-  .patch(
-    "/todos/swap3",
+    "/todos/swap-by-id",
     zValidator(
       "json",
       z.object({
         id1: positiveIntSchema,
+        position1: positiveIntSchema,
         id2: positiveIntSchema,
+        position2: positiveIntSchema,
       })
     ),
     async (c) => {
-      const { id1, id2 } = await c.req.valid("json");
+      const { id1, position1, id2, position2 } = await c.req.valid("json");
 
-      const [todo1, todo2] = await db
+      const todos = await db
         .selectFrom("todo")
         .select(["id", "position"])
-        .where("id", "in", [id1, id2])
+        .where((eb) =>
+          eb.or([
+            eb.and([eb("id", "=", id1), eb("position", "=", position1)]),
+            eb.and([eb("id", "=", id2), eb("position", "=", position2)]),
+          ])
+        )
         .execute();
+
+      if (todos.length !== 2) {
+        return c.json({
+          success: false,
+          message: "Invalid todo ids or positions",
+        });
+      }
+      const [todo1, todo2] = todos;
 
       const result = await db.transaction().execute(async (trx) => {
         const swappedTodo1 = await trx
@@ -159,7 +131,7 @@ const apiRouter = new Hono()
   )
   // swap todos by position
   .patch(
-    "/todos/swap2",
+    "/todos/swap-by-position",
     zValidator(
       "json",
       z.object({
