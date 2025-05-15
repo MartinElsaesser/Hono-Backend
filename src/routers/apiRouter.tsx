@@ -6,6 +6,7 @@ import {
   parsePositiveIntSchema,
   positiveIntSchema,
 } from "../schemas/utilitySchemas.js";
+import { todoSchema } from "../schemas/todo.js";
 
 const apiRouter = new Hono()
   // get all todos
@@ -68,6 +69,35 @@ const apiRouter = new Hono()
       return c.json({
         success: true,
         data: { post },
+      });
+    }
+  )
+  .patch(
+    "/todos/:todoId",
+    zValidator(
+      "json",
+      todoSchema.omit({ id: true, position: true, created_at: true }).partial()
+    ),
+    zValidator(
+      "param",
+      z.object({
+        todoId: parsePositiveIntSchema,
+      })
+    ),
+    async (c) => {
+      const updateTodo = await c.req.valid("json");
+      const todoId = await c.req.valid("param");
+
+      const todo = await db
+        .updateTable("todo")
+        .set(updateTodo)
+        .where("id", "=", todoId.todoId)
+        .returningAll()
+        .execute();
+
+      return c.json({
+        success: true,
+        data: { todo },
       });
     }
   )
