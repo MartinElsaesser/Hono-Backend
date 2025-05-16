@@ -124,37 +124,6 @@ const apiRouter = new Hono()
 			return c.json({});
 		}
 	)
-	// swap todos by position
-	.patch(
-		"/todos/swap-by-position",
-		zValidator(
-			"json",
-			z.object({
-				position1: positiveIntSchema,
-				position2: positiveIntSchema,
-			})
-		),
-		async c => {
-			const { position1, position2 } = await c.req.valid("json");
-
-			const result = await db
-				.updateTable("todo")
-				.set(eb => ({
-					position: eb
-						.case()
-						.when("position", "=", position1)
-						.then(position2)
-						.else(position1)
-						.end(),
-				}))
-				.where("position", "in", [position1, position2])
-				.returningAll()
-				.execute();
-			console.log(result);
-
-			return c.json(result);
-		}
-	)
 	// update a todo
 	.patch(
 		"/todos/:todoId",
