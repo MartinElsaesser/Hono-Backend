@@ -47,7 +47,7 @@ const apiRouter = new Hono()
 		),
 		async c => {
 			const insertTodo = await c.req.valid("json");
-			const todo = await createTodo({ insertTodo });
+			const todo = await createTodo({ todo: insertTodo });
 			return c.json(todo);
 		}
 	)
@@ -86,7 +86,7 @@ const apiRouter = new Hono()
 			const todoData = await c.req.valid("json");
 			const { todoId } = await c.req.valid("param");
 			// throw new Error(`Cannot update todo ${todoId}`);
-			const todo = await updateTodo({ todoId, updateTodo: todoData });
+			const todo = await updateTodo({ todoId, todo: todoData });
 			return c.json(todo);
 		}
 	)

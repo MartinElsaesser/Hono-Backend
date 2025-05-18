@@ -15,13 +15,13 @@ export async function getTodoById({ todoId }: { todoId: TodoId }) {
 	return todo;
 }
 
-export async function createTodo({ insertTodo }: { insertTodo: InsertTodo }) {
-	const todo = await db
+export async function createTodo({ todo }: { todo: InsertTodo }) {
+	const newTodo = await db
 		.insertInto("todo")
-		.values(insertTodo)
+		.values(todo)
 		.returningAll()
 		.executeTakeFirstOrThrow();
-	return todo;
+	return newTodo;
 }
 
 export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoId; toId: TodoId }) {
@@ -77,28 +77,23 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 	return {};
 }
 
-export async function updateTodo({
-	todoId,
-	updateTodo,
-}: {
-	todoId: TodoId;
-	updateTodo: UpdateTodo;
-}) {
-	const todo = await db
+export async function updateTodo({ todoId, todo }: { todoId: TodoId; todo: UpdateTodo }) {
+	const updatedTodo = await db
 		.updateTable("todo")
-		.set(updateTodo)
+		.set(todo)
 		.where("id", "=", todoId)
 		.returningAll()
 		.execute();
 
-	return todo;
+	return updatedTodo;
 }
+
 export async function deleteTodo({ todoId }: { todoId: number }) {
-	const todo = await db
+	const deletedTodo = await db
 		.deleteFrom("todo")
 		.where("id", "=", todoId)
 		.returningAll()
 		.executeTakeFirstOrThrow();
 
-	return todo;
+	return deletedTodo;
 }
