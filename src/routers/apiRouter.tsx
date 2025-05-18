@@ -4,11 +4,19 @@ import { z } from "zod";
 import { db } from "../db/db.js";
 import { parsePositiveIntSchema, positiveIntSchema } from "../schemas/utilitySchemas.js";
 import { todoSchema } from "../schemas/todo.js";
+import {
+	createTodo,
+	getAllTodos,
+	updateTodo,
+	deleteTodo,
+	getTodoById,
+	moveTodoBetweenPositions,
+} from "../db/services/TodoService.js";
 
 const apiRouter = new Hono()
 	// get all todos
 	.get("/todos", async c => {
-		const todos = await db.selectFrom("todo").orderBy("position", "asc").selectAll().execute();
+		const todos = await getAllTodos();
 		return c.json(todos);
 	})
 	// get a specific todo
@@ -22,11 +30,7 @@ const apiRouter = new Hono()
 		),
 		async c => {
 			const { todoId } = await c.req.valid("param");
-			const todo = await db
-				.selectFrom("todo")
-				.selectAll()
-				.where("id", "=", todoId)
-				.executeTakeFirstOrThrow();
+			const todo = await getTodoById({ todoId });
 			return c.json(todo);
 		}
 	)
@@ -43,17 +47,7 @@ const apiRouter = new Hono()
 		),
 		async c => {
 			const insertTodo = await c.req.valid("json");
-
-			const todo = await db
-				.insertInto("todo")
-				.values({
-					description: insertTodo.description,
-					done: insertTodo.done,
-					headline: insertTodo.headline,
-				})
-				.returningAll()
-				.executeTakeFirstOrThrow();
-
+			const todo = await createTodo({ insertTodo });
 			return c.json(todo);
 		}
 	)
@@ -71,57 +65,8 @@ const apiRouter = new Hono()
 		),
 		async c => {
 			const { fromId, toId } = await c.req.valid("json");
-
-			const result = await db.transaction().execute(async trx => {
-				const toTodo = await db
-					.selectFrom("todo")
-					.select(["id", "position"])
-					.where("todo.id", "=", toId)
-					.executeTakeFirstOrThrow();
-
-				const fromTodo = await db
-					.selectFrom("todo")
-					.select(["id", "position"])
-					.where("todo.id", "=", fromId)
-					.executeTakeFirstOrThrow();
-				const futurePositionFromTodo = toTodo.position;
-
-				let shiftOtherTodosQuery = trx.updateTable("todo").returningAll();
-				if (toTodo.position < fromTodo.position) {
-					// rechts-shift
-					shiftOtherTodosQuery = shiftOtherTodosQuery
-						.set(eb => ({ position: eb("position", "+", 1) }))
-						.where(eb =>
-							eb.and([
-								eb("position", ">=", toTodo.position),
-								eb("position", "<", fromTodo.position),
-							])
-						);
-				} else if (fromTodo.position < toTodo.position) {
-					// links-shift
-					shiftOtherTodosQuery = shiftOtherTodosQuery
-						.set(eb => ({ position: eb("position", "-", 1) }))
-						.where(eb =>
-							eb.and([
-								eb("position", ">", fromTodo.position),
-								eb("position", "<=", toTodo.position),
-							])
-						);
-				} else {
-					throw new Error("Cannot swap the same todo");
-				}
-				await shiftOtherTodosQuery.execute();
-
-				const fromTodoNowAtFuturePosition = await trx
-					.updateTable("todo")
-					.set({ position: futurePositionFromTodo })
-					.where("id", "=", fromId)
-					.returningAll()
-					.executeTakeFirstOrThrow();
-				return fromTodoNowAtFuturePosition;
-			});
-
-			return c.json({});
+			const result = await moveTodoBetweenPositions({ fromId, toId });
+			return c.json(result);
 		}
 	)
 	// update a todo
@@ -138,16 +83,10 @@ const apiRouter = new Hono()
 			})
 		),
 		async c => {
-			const updateTodo = await c.req.valid("json");
+			const todoData = await c.req.valid("json");
 			const { todoId } = await c.req.valid("param");
 			// throw new Error(`Cannot update todo ${todoId}`);
-			const todo = await db
-				.updateTable("todo")
-				.set(updateTodo)
-				.where("id", "=", todoId)
-				.returningAll()
-				.execute();
-
+			const todo = await updateTodo({ todoId, updateTodo: todoData });
 			return c.json(todo);
 		}
 	)
@@ -156,12 +95,7 @@ const apiRouter = new Hono()
 	.delete("/todos", zValidator("json", z.object({ todoId: z.number() })), async c => {
 		// get validated data
 		const { todoId } = await c.req.valid("json");
-
-		const todo = await db
-			.deleteFrom("todo")
-			.where("id", "=", todoId)
-			.returningAll()
-			.executeTakeFirstOrThrow();
+		const todo = await deleteTodo({ todoId });
 
 		return c.json(todo);
 	});
