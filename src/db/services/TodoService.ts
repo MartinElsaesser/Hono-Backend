@@ -48,7 +48,7 @@ export async function createTodo({ todo }: { todo: InsertTodo }) {
  */
 
 export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoId; toId: TodoId }) {
-	const result = await db.transaction().execute(async trx => {
+	const movedFromTodo = await db.transaction().execute(async trx => {
 		// Get the current positions of fromTodo and toTodo
 		const toTodo = await db
 			.selectFrom("todo")
@@ -63,7 +63,7 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 			.executeTakeFirstOrThrow();
 
 		// fromTodo will be moved to the position of toTodo later on
-		const futurePositionFromTodo = toTodo.position;
+		const oldToTodoPosition = toTodo.position;
 
 		// Check if the from todo is moved to the left or right
 		// and shift the other todos accordingly
@@ -97,16 +97,16 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 		await shiftOtherTodosQuery.execute();
 
 		// Move fromTodo to the old position of toTodo
-		const fromTodoNowAtFuturePosition = await trx
+		const movedFromTodo = await trx
 			.updateTable("todo")
-			.set({ position: futurePositionFromTodo })
+			.set({ position: oldToTodoPosition })
 			.where("id", "=", fromId)
 			.returningAll()
 			.executeTakeFirstOrThrow();
-		return fromTodoNowAtFuturePosition;
+		return movedFromTodo;
 	});
 
-	return {};
+	return { movedFromTodo };
 }
 
 export async function updateTodo({ todoId, todo }: { todoId: TodoId; todo: UpdateTodo }) {
