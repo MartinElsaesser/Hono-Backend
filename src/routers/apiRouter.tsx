@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { db } from "../db/db.js";
 import { parsePositiveIntSchema, positiveIntSchema } from "../schemas/utilitySchemas.js";
 import { todoSchema } from "../schemas/todo.js";
 import {
