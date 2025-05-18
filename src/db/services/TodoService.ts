@@ -24,8 +24,32 @@ export async function createTodo({ todo }: { todo: InsertTodo }) {
 	return newTodo;
 }
 
+/**
+ * This function moves the todo with `id=fromId` to the position of the todo with `id=toId`.\
+ * It shifts the positions of the other todos accordingly.
+ * @param fromId - The id of the todo to move (from todo)
+ * @param toId - The id of the todo to move to (to todo)
+ *
+ * @example
+ * // The todo with `id=fromId` is moved to the right:
+ * // the todos ids are equal to the number in their names
+ * [todo1, todo2, todo3, todo4]
+ * moveTodoBetweenPositions({ fromId: 1, toId: 3 })
+ * [todo2, todo3, todo1, todo4]
+ *
+ * @example
+ * // The todo with `id=fromId` is moved to the left:
+ * // the todos ids are equal to the number in their names
+ * [todo1, todo2, todo3, todo4]
+ * moveTodoBetweenPositions({ fromId: 4, toId: 2 })
+ * [todo1, todo4, todo2, todo3]
+ * @param param0
+ * @returns
+ */
+
 export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoId; toId: TodoId }) {
 	const result = await db.transaction().execute(async trx => {
+		// Get the current positions of fromTodo and toTodo
 		const toTodo = await db
 			.selectFrom("todo")
 			.select(["id", "position"])
@@ -37,11 +61,16 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 			.select(["id", "position"])
 			.where("todo.id", "=", fromId)
 			.executeTakeFirstOrThrow();
+
+		// fromTodo will be moved to the position of toTodo later on
 		const futurePositionFromTodo = toTodo.position;
 
+		// Check if the from todo is moved to the left or right
+		// and shift the other todos accordingly
 		let shiftOtherTodosQuery = trx.updateTable("todo").returningAll();
 		if (toTodo.position < fromTodo.position) {
-			// rechts-shift
+			// fromTodo will be moved to the left
+			// all todos between toTodo (incl.) and fromTodo (excl.) are shifted one position to the right
 			shiftOtherTodosQuery = shiftOtherTodosQuery
 				.set(eb => ({ position: eb("position", "+", 1) }))
 				.where(eb =>
@@ -51,7 +80,8 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 					])
 				);
 		} else if (fromTodo.position < toTodo.position) {
-			// links-shift
+			// fromTodo will be moved to the right
+			// all todos between fromTodo (excl.) and toTodo (incl.) are shifted one position to the left
 			shiftOtherTodosQuery = shiftOtherTodosQuery
 				.set(eb => ({ position: eb("position", "-", 1) }))
 				.where(eb =>
@@ -61,10 +91,12 @@ export async function moveTodoBetweenPositions({ fromId, toId }: { fromId: TodoI
 					])
 				);
 		} else {
+			// fromTodo wouldn't be moved at all
 			throw new Error("Cannot swap the same todo");
 		}
 		await shiftOtherTodosQuery.execute();
 
+		// Move fromTodo to the old position of toTodo
 		const fromTodoNowAtFuturePosition = await trx
 			.updateTable("todo")
 			.set({ position: futurePositionFromTodo })
